@@ -5,7 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 /// VoiceService provides a simple, testable wrapper around STT and TTS.
 /// - Telugu-first: attempts to prefer Telugu voices when available.
-/// - Exposes streams for partial transcripts and final transcript events.
+/// - Exposes streams for partial transcripts, final transcript events and amplitude (sound level).
 class VoiceService {
   final FlutterTts _tts = FlutterTts();
   final stt.SpeechToText _stt = stt.SpeechToText();
@@ -13,6 +13,7 @@ class VoiceService {
   final StreamController<String> _partialController = StreamController.broadcast();
   final StreamController<String> _finalController = StreamController.broadcast();
   final StreamController<bool> _listeningController = StreamController.broadcast();
+  final StreamController<double> _amplitudeController = StreamController.broadcast();
 
   bool _listening = false;
   String _currentLocaleId = 'te-IN';
@@ -22,18 +23,18 @@ class VoiceService {
   Stream<String> get partialTranscript => _partialController.stream;
   Stream<String> get finalTranscript => _finalController.stream;
   Stream<bool> get listeningState => _listeningController.stream;
+  Stream<double> get amplitude => _amplitudeController.stream;
 
   Future<void> init() async {
     // initialize TTS
     await _tts.setSharedInstance(true);
-    // set default params
     await _tts.setVolume(1.0);
     await _tts.setSpeechRate(0.45);
     await _tts.setPitch(1.0);
 
-    // initialize STT
+    // initialize STT (permissions must be requested by the caller)
     try {
-      await _stt.initialize();
+      await _stt.initialize(onError: (e) => {}, onStatus: (s) => {});
     } catch (e) {
       // ignore for now; platform may not have permission yet
     }
@@ -87,6 +88,10 @@ class VoiceService {
       } else {
         _partialController.add(text);
       }
+    }, onSoundLevelChange: (level) {
+      // speech_to_text reports a dB value; normalize to 0..1
+      final normalized = (level + 50) / 60.0; // approximate
+      _amplitudeController.add(normalized.clamp(0.0, 1.0));
     }, localeId: _currentLocaleId, partialResults: partialResults);
   }
 
@@ -101,5 +106,6 @@ class VoiceService {
     _partialController.close();
     _finalController.close();
     _listeningController.close();
+    _amplitudeController.close();
   }
 }
