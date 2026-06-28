@@ -45,16 +45,21 @@ class _MicPermissionButtonState extends State<MicPermissionButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _request,
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700]),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.mic),
-        const SizedBox(width: 8),
-        Text(widget.label),
-        const SizedBox(width: 12),
-        Text('($_statusText)', style: const TextStyle(fontSize: 12)),
-      ]),
+    return Semantics(
+      button: true,
+      label: widget.label,
+      hint: 'Opens microphone permission flow',
+      child: ElevatedButton(
+        onPressed: _request,
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700], minimumSize: const Size(140,48), padding: const EdgeInsets.symmetric(horizontal: 14.0)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.mic),
+          const SizedBox(width: 8),
+          Text(widget.label),
+          const SizedBox(width: 12),
+          Text('($_statusText)', style: const TextStyle(fontSize: 12)),
+        ]),
+      ),
     );
   }
 }

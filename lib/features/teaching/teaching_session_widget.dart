@@ -8,21 +8,25 @@ class TeachingSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 420),
-      opacity: active ? 1.0 : 0.0,
-      child: AnimatedSlide(
+    return Semantics(
+      container: true,
+      label: '$title. $body',
+      child: AnimatedOpacity(
         duration: const Duration(milliseconds: 420),
-        offset: active ? Offset.zero : const Offset(0, 0.08),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 22),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.04), borderRadius: BorderRadius.circular(12)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(body, style: const TextStyle(color: Colors.white70)),
-          ]),
+        opacity: active ? 1.0 : 0.0,
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 420),
+          offset: active ? Offset.zero : const Offset(0, 0.08),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 22),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.04), borderRadius: BorderRadius.circular(12)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.amberAccent, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(body, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+            ]),
+          ),
         ),
       ),
     );

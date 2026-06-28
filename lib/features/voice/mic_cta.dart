@@ -8,18 +8,28 @@ class TalkToDharmaCTA extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: Colors.amber[700],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      elevation: 8,
+      minimumSize: const Size(120, 48),
+      padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 12.0),
+      tapTargetSize: MaterialTapTargetSize.padded,
+    );
+
     return Center(
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: const Icon(Icons.mic, size: 22, color: Colors.black),
-        label: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 14.0, horizontal: 8.0),
-          child: Text('🎤 Talk to Dharma', style: TextStyle(fontSize: 18, color: Colors.black)),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber[700],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          elevation: 8,
+      child: Semantics(
+        button: true,
+        label: 'Talk to Dharma',
+        hint: 'Tap to enter immersive voice mode',
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.mic, size: 22, color: Colors.black),
+          label: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
+            child: Text('🎤 Talk to Dharma', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.black, fontWeight: FontWeight.w700)),
+          ),
+          style: buttonStyle,
         ),
       ),
     );
