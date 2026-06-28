@@ -1,0 +1,6 @@
+// Analysis options for a cleaner codebase
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: false
