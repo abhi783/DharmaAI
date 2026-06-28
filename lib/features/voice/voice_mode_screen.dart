@@ -5,6 +5,8 @@ import '../../core/services/permission_service.dart';
 import '../../core/services/voice_service.dart';
 import '../../core/widgets/dharma_orb.dart';
 import '../../core/widgets/waveform_painter.dart';
+import '../../core/teaching/teaching_engine.dart';
+import '../teaching/teaching_session_widget.dart';
 
 /// Full-screen immersive voice experience — cinematic and minimal.
 class VoiceModeScreen extends StatefulWidget {
@@ -29,6 +31,13 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
   bool _listening = false;
   bool _speaking = false;
   bool _muted = false;
+
+  TeachingEngine _teachingEngine = TeachingEngine();
+
+  // Teaching session state
+  TeachingResponse? _currentTeaching;
+  int _currentSectionIndex = -1;
+  bool _interrupted = false;
 
   @override
   void initState() {
@@ -83,29 +92,82 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
       });
       // transition to thinking
       await _voice.stopListening();
-      _showThinkingSequence();
+      _showThinkingSequenceAndTeach(t);
     });
     _ampSub = _voice.amplitude.listen((a) { setState(() => _amplitude = a); });
 
     setState(() {
+      _partial = '';
+      _final = '';
       _listening = true;
       _orbController.setState(OrbState.listening);
     });
   }
 
-  Future<void> _showThinkingSequence() async {
+  Future<void> _showThinkingSequenceAndTeach(String userSpeech) async {
     setState(() => _orbController.setState(OrbState.thinking));
-    // show a sequence of banners
+    // show banners
     await _showBanner('🧠 Dharma is understanding...');
     await _showBanner('📖 Searching knowledge...');
     await _showBanner('💡 Preparing response...');
 
-    // Simulate speaking (in reality, call backend streaming here)
-    setState(() { _speaking = true; _orbController.setState(OrbState.speaking); });
-    // Fake streamed response for now — will integrate backend streaming later
-    final simulated = 'ఇది ఒక నమూనా ప్రతిస్పందన: ఈ రోజు ధర్మం సారాంశం.';
-    await _simulateStreamedResponse(simulated);
-    setState(() { _speaking = false; _orbController.setState(OrbState.calm); });
+    // Build teaching response from provider text — for now we use userSpeech to simulate provider
+    // In production this should be replaced by server streaming integration (STEP 2)
+    final providerText = _mockProviderResponseForQuery(userSpeech);
+    final teaching = _teachingEngine.createFromProviderText(providerText: providerText, isScripture: providerText.toLowerCase().contains('gita') || providerText.toLowerCase().contains('భగవద్గీత'));
+
+    setState(() {
+      _currentTeaching = teaching;
+      _currentSectionIndex = -1;
+    });
+
+    // Run teaching session: animate each section and speak it
+    await _runTeachingSession(teaching);
+
+    setState(() => _orbController.setState(OrbState.calm));
+  }
+
+  Future<void> _runTeachingSession(TeachingResponse teaching) async {
+    final sections = _flattenTeachingSections(teaching);
+    for (int i = 0; i < sections.length; i++) {
+      if (_interrupted) break;
+      setState(() {
+        _currentSectionIndex = i;
+      });
+      final text = sections[i]['text'] as String;
+      // speak section-by-section
+      if (!_muted) {
+        final completed = await _voice.speakAndWait(text, timeout: Duration(seconds: max(5, (text.length ~/ 10))));
+        if (!completed) {
+          // interrupted or timeout
+          _interrupted = true;
+          break;
+        }
+      } else {
+        // if muted, just wait briefly to allow animation
+        await Future.delayed(const Duration(milliseconds: 700));
+      }
+      // small pause between sections
+      await Future.delayed(const Duration(milliseconds: 420));
+    }
+  }
+
+  List<Map<String, Object>> _flattenTeachingSections(TeachingResponse t) {
+    final List<Map<String, Object>> out = [];
+    out.add({'title': 'Simple Answer', 'text': t.simpleAnswer});
+    out.add({'title': 'Explanation', 'text': t.explanation});
+    out.add({'title': 'Example', 'text': t.example});
+
+    if (t.verifiedTeaching != null) {
+      out.add({'title': 'Verified Teaching', 'text': t.verifiedTeaching!});
+      out.add({'title': 'Traditional Interpretation', 'text': t.traditionalInterpretation ?? ''});
+      out.add({'title': 'Modern Application', 'text': t.modernApplication ?? ''});
+    }
+
+    out.add({'title': 'Summary', 'text': t.summary});
+    out.add({'title': 'Reflection', 'text': t.reflectionQuestion});
+    if (t.relatedSuggestion != null) out.add({'title': 'Suggested Next Topic', 'text': t.relatedSuggestion!});
+    return out;
   }
 
   Future<void> _showBanner(String text) async {
@@ -123,19 +185,14 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
-  Future<void> _simulateStreamedResponse(String text) async {
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      buffer.write(text[i]);
-      setState(() { _partial = buffer.toString(); });
-      await Future.delayed(Duration(milliseconds: 30 + (i % 5) * 10));
-    }
-    // speak the final response using TTS
-    if (!_muted) await _voice.speak(text);
+  String _mockProviderResponseForQuery(String q) {
+    // For demo: return a constructed sample that looks like a provider output
+    return 'Simple: ధర్మం అనేది కర్తవ్యాన్ని స్వచ్చურად చేయడమనే భావన. Explanation: ధర్మం అంటే మనిది చేయాల్సిన పని, ఫలాలను ఆశించకుండానే. Example: ఒక రైతు రోజుకు పనిచేస్తాడు, అయితే ఫలానికి త్వరగా ఆశించడు. Summary: ధర్మం మనకి జీవితం యొక్క మార్గదర్శకత్వం. Reflection: మీరు ఈ రోజు ఏ చిన్న పని ధర్మంగా చేయగలరు?';
   }
 
   void _interruptAndListen() async {
     // Stop any TTS and return to listening
+    _interrupted = true;
     await _voice.stopSpeaking();
     await _voice.startListening();
     setState(() {
@@ -143,6 +200,7 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
       _final = '';
       _listening = true;
       _orbController.setState(OrbState.listening);
+      _currentSectionIndex = -1;
     });
   }
 
@@ -160,16 +218,16 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DharmaOrb(size: 220, controller: _orbController),
               const SizedBox(height: 28),
-              if (_listening) ...[
+
+              // Teaching session view
+              if (_currentTeaching != null) ...[
+                TeachingSessionWidget(teaching: _currentTeaching!, activeIndex: _currentSectionIndex),
+              ] else if (_listening) ...[
                 Text('నేను వింటున్నాను...', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white)),
                 const SizedBox(height: 12),
                 SizedBox(height: 48, width: 260, child: CustomPaint(painter: WaveformPainter(amplitude: _amplitude, color: Colors.white70))),
-              ] else if (_speaking) ...[
-                SizedBox(height: 48, width: 300, child: Text(_partial, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white))),
-                const SizedBox(height: 12),
-                SizedBox(height: 48, width: 260, child: CustomPaint(painter: WaveformPainter(amplitude: _amplitude, color: Colors.white70))),
               ] else ...[
-                Text('హలో — నేను ధర్మను ప్రతినిధించే ఒక ముక్క', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70)),
+                Text('హలో — నేనిప్పుడు సిద్ధంగా ఉన్నాను.', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70)),
               ]
             ]),
           ),
@@ -180,7 +238,7 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
             left: 24,
             right: 24,
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              _ControlButton(icon: Icons.volume_off, label: 'Mute', onTap: () { setState(() => _muted = !_muted); }),
+              _ControlButton(icon: Icons.volume_off, label: _muted ? 'Unmute' : 'Mute', onTap: () { setState(() => _muted = !_muted); }),
               _ControlButton(icon: Icons.stop, label: 'Cancel', onTap: () async { await _voice.stopListening(); await _voice.stopSpeaking(); Navigator.of(context).pop(); }),
               _ControlButton(icon: Icons.power_settings_new, label: 'End', onTap: () { Navigator.of(context).pop(); }),
             ]),
@@ -216,45 +274,4 @@ class _VoiceModeScreenState extends State<VoiceModeScreen> with SingleTickerProv
       ),
     );
   }
-}
-
-class _ControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _ControlButton({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(14)),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white), const SizedBox(height: 6), Text(label, style: const TextStyle(color: Colors.white, fontSize: 12))]),
-      ),
-    );
-  }
-}
-
-class _ImmersiveParticlePainter extends CustomPainter {
-  final double intensity;
-  _ImmersiveParticlePainter({this.intensity = 1.0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.amber.withOpacity(0.02 * intensity);
-    final rnd = Random(42);
-    final count = (40 * intensity).floor();
-    for (int i = 0; i < count; i++) {
-      final x = rnd.nextDouble() * size.width;
-      final y = rnd.nextDouble() * size.height;
-      final r = 0.5 + rnd.nextDouble() * 2.2;
-      canvas.drawCircle(Offset(x, y), r, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
