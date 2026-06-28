@@ -5,6 +5,7 @@ import '../../core/teaching/teaching_engine.dart';
 
 class TeachingSessionStorage {
   static const _key = 'saved_learning_sessions_v1';
+  static const _partialKey = 'partial_learning_session_v1';
 
   TeachingSessionStorage._privateConstructor();
   static final TeachingSessionStorage instance = TeachingSessionStorage._privateConstructor();
@@ -26,7 +27,7 @@ class TeachingSessionStorage {
     final all = await _getAll();
     final entry = {
       'createdAt': DateTime.now().toIso8601String(),
-      'title': title ?? teaching.simpleAnswer.substring(0, teaching.simpleAnswer.length.clamp(10, 80)),
+      'title': title ?? (teaching.simpleAnswer.length > 80 ? teaching.simpleAnswer.substring(0, 80) : teaching.simpleAnswer),
       'teaching': teaching.toJson(),
     };
     all.insert(0, entry);
@@ -43,5 +44,28 @@ class TeachingSessionStorage {
 
   Future<List<Map<String, dynamic>>> listSessions() async {
     return await _getAll();
+  }
+
+  // Partial session support
+  Future<void> savePartialSession(Map<String, dynamic> partial) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_partialKey, jsonEncode({'savedAt': DateTime.now().toIso8601String(), 'partial': partial}));
+  }
+
+  Future<Map<String, dynamic>?> loadPartialSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_partialKey);
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearPartialSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_partialKey);
   }
 }

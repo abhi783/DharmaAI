@@ -14,7 +14,40 @@ class BackendService {
   // For Android emulator, `10.0.2.2` maps to localhost on the host machine.
   String baseUrl = const String.fromEnvironment('DHARMA_BRAIN_URL', defaultValue: 'http://10.0.2.2:8090');
 
-  Stream<Map<String, dynamic>> streamTeaching({required String query, String? style}) async* {
+  /// Stream the teaching SSE with optional reconnect/backoff.
+  /// This wrapper yields server events and automatically reconnects if the
+  /// connection drops unexpectedly. Callers should cancel the returned
+  /// subscription when they want to stop the session.
+  Stream<Map<String, dynamic>> streamTeachingWithReconnect({required String query, String? style, Duration? maxDuration}) async* {
+    int attempt = 0;
+    final maxAttempts = 5;
+    final endTime = maxDuration != null ? DateTime.now().add(maxDuration) : null;
+
+    while (true) {
+      if (endTime != null && DateTime.now().isAfter(endTime)) break;
+      try {
+        final inner = _streamOnce(query: query, style: style);
+        await for (final ev in inner) {
+          yield ev;
+        }
+        // if stream ends cleanly, stop reconnecting
+        break;
+      } catch (e) {
+        attempt++;
+        if (attempt > maxAttempts) {
+          // give up; rethrow to caller
+          rethrow;
+        }
+        // exponential backoff with jitter
+        final waitMs = (500 * (1 << (attempt - 1))).clamp(500, 8000);
+        final jitter = (waitMs * 0.25).toInt();
+        final delay = Duration(milliseconds: waitMs + (jitter - (jitter ~/ 2)));
+        await Future.delayed(delay);
+      }
+    }
+  }
+
+  Stream<Map<String, dynamic>> _streamOnce({required String query, String? style}) async* {
     final uri = Uri.parse('$baseUrl/v1/teaching-stream');
     final body = jsonEncode({ 'query': query, if (style != null) 'style': style });
 
@@ -59,5 +92,10 @@ class BackendService {
     }
 
     client.close();
+  }
+
+  // Legacy method kept for backward compatibility, but does not reconnect.
+  Stream<Map<String, dynamic>> streamTeaching({required String query, String? style}) {
+    return _streamOnce(query: query, style: style);
   }
 }
