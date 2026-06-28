@@ -16,7 +16,7 @@ class _AnimatedScaleTapState extends State<AnimatedScaleTap> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 120), lowerBound: 0.0, upperBound: 0.05);
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 150), lowerBound: 0.0, upperBound: 0.05);
     _anim = CurvedAnimation(parent: _c, curve: Curves.easeOut);
   }
 

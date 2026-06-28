@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/viewmodels/theme_viewmodel.dart';
 import 'core/theme/dharma_theme.dart';
-import 'features/home/home_screen.dart';
-import 'features/chat/chat_screen.dart';
-import 'features/history/history_screen.dart';
-import 'features/profile/profile_screen.dart';
-import 'features/settings/settings_screen.dart';
+import 'features/root/root_scaffold.dart';
 
 class DharmaApp extends StatelessWidget {
   const DharmaApp({super.key});
@@ -22,14 +18,7 @@ class DharmaApp extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeAnimationDuration: const Duration(milliseconds: 400),
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const HomeScreen(),
-        '/chat': (_) => const ChatScreen(),
-        '/history': (_) => const HistoryScreen(),
-        '/profile': (_) => const ProfileScreen(),
-        '/settings': (_) => const SettingsScreen(),
-      },
+      home: const RootScaffold(),
     );
   }
 }

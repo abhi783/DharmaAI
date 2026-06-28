@@ -1,39 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const gold = Color(0xFFFFC857);
+const Color kGold = Color(0xFFFFC857);
+const Color kDeepBlack = Color(0xFF050607);
 
-final darkColorScheme = ColorScheme.fromSeed(
-  seedColor: gold,
+final ColorScheme _darkScheme = ColorScheme(
   brightness: Brightness.dark,
-  background: const Color(0xFF0B0F12),
-  surface: const Color(0xFF0F1316),
+  primary: kGold,
   onPrimary: Colors.black,
-);
-
-final lightColorScheme = ColorScheme.fromSeed(
-  seedColor: gold,
+  secondary: const Color(0xFFB08A00),
+  onSecondary: Colors.white,
+  error: Colors.red.shade400,
+  onError: Colors.white,
+  background: kDeepBlack,
+  onBackground: Colors.white,
+  surface: const Color(0x0FFFFFFF),
+  onSurface: Colors.white,
 );
 
 final ThemeData darkTheme = ThemeData(
   useMaterial3: true,
-  colorScheme: darkColorScheme,
-  scaffoldBackgroundColor: darkColorScheme.background,
-  textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+  colorScheme: _darkScheme,
+  scaffoldBackgroundColor: kDeepBlack,
+  textTheme: GoogleFonts.montserratTextTheme(ThemeData.dark().textTheme).apply(bodyColor: Colors.white),
   appBarTheme: const AppBarTheme(
     surfaceTintColor: Colors.transparent,
     backgroundColor: Colors.transparent,
     elevation: 0,
+    centerTitle: true,
+  ),
+  navigationBarTheme: NavigationBarThemeData(
+    backgroundColor: Colors.black.withOpacity(0.2),
+    indicatorColor: kGold.withOpacity(0.16),
+    labelTextStyle: MaterialStateProperty.all(const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+    iconTheme: MaterialStateProperty.all(const IconThemeData(size: 20)),
   ),
   bottomNavigationBarTheme: BottomNavigationBarThemeData(
-    backgroundColor: darkColorScheme.surface.withOpacity(0.3),
-    selectedItemColor: gold,
+    backgroundColor: Colors.black.withOpacity(0.2),
+    selectedItemColor: kGold,
     unselectedItemColor: Colors.white70,
   ),
 );
 
-final ThemeData lightTheme = ThemeData(
-  useMaterial3: true,
-  colorScheme: lightColorScheme,
-  textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
-);
+final ThemeData lightTheme = ThemeData.light().copyWith(useMaterial3: true);

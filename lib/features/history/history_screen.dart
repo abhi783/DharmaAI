@@ -6,8 +6,8 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('History'), backgroundColor: Colors.transparent, elevation: 0),
-      body: const Center(child: Text('No history yet — your conversations will appear here.')),
+      backgroundColor: Colors.transparent,
+      body: Center(child: Text('History — your past conversations', style: Theme.of(context).textTheme.bodyLarge)),
     );
   }
 }
