@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// PermissionService handles runtime permission checks and requests.
 /// This is a thin modular wrapper around permission_handler so the rest of
@@ -10,15 +10,15 @@ class PermissionService {
   factory PermissionService() => _instance;
 
   /// Check microphone permission status.
-  Future<PermissionStatus> checkMicrophonePermission() async {
-    final status = await Permission.microphone.status;
+  Future<ph.PermissionStatus> checkMicrophonePermission() async {
+    final status = await ph.Permission.microphone.status;
     return status;
   }
 
   /// Request microphone permission with rationale flow support.
   /// Returns the new permission status.
-  Future<PermissionStatus> requestMicrophonePermission() async {
-    final status = await Permission.microphone.request();
+  Future<ph.PermissionStatus> requestMicrophonePermission() async {
+    final status = await ph.Permission.microphone.request();
     return status;
   }
 
@@ -32,7 +32,7 @@ class PermissionService {
 class PermissionHandlerCompat {
   static Future<bool> openAppSettings() async {
     try {
-      return await openAppSettings();
+      return await ph.openAppSettings();
     } catch (_) {
       return false;
     }
