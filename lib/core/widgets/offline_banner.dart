@@ -3,7 +3,8 @@ import '../../core/services/network_service.dart';
 
 class OfflineBanner extends StatefulWidget {
   final String message;
-  const OfflineBanner({super.key, this.message = 'You are offline — reconnect to continue.'});
+  final VoidCallback? onRetry;
+  const OfflineBanner({super.key, this.message = 'You are offline — reconnect to continue.', this.onRetry});
 
   @override
   State<OfflineBanner> createState() => _OfflineBannerState();
@@ -45,7 +46,7 @@ class _OfflineBannerState extends State<OfflineBanner> {
               const Icon(Icons.cloud_off, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(child: Text(widget.message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-              TextButton(onPressed: () {}, child: const Text('Retry', style: TextStyle(color: Colors.white)))
+              TextButton(onPressed: widget.onRetry ?? () { BackendService.instance.requestImmediateReconnect(); }, child: const Text('Retry', style: TextStyle(color: Colors.white)))
             ]),
           ),
         ),

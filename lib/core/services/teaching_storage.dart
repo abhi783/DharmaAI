@@ -6,6 +6,7 @@ import '../../core/teaching/teaching_engine.dart';
 class TeachingSessionStorage {
   static const _key = 'saved_learning_sessions_v1';
   static const _partialKey = 'partial_learning_session_v1';
+  static const _queuedKey = 'queued_learning_session_v1';
 
   TeachingSessionStorage._privateConstructor();
   static final TeachingSessionStorage instance = TeachingSessionStorage._privateConstructor();
@@ -67,5 +68,28 @@ class TeachingSessionStorage {
   Future<void> clearPartialSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_partialKey);
+  }
+
+  // Queued single session support. Only one queued item supported for simplicity.
+  Future<void> saveQueuedSession(Map<String, dynamic> queued) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_queuedKey, jsonEncode({'savedAt': DateTime.now().toIso8601String(), 'queued': queued}));
+  }
+
+  Future<Map<String, dynamic>?> loadQueuedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_queuedKey);
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearQueuedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_queuedKey);
   }
 }
